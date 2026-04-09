@@ -50,6 +50,12 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleDeleteOrder = async (id) => {
+        if (window.confirm('¿Seguro que quieres eliminar este pedido del historial?')) {
+            await deleteDoc(doc(db, 'orders', id));
+        }
+    };
+
     const handleUpdateOrderStatus = async (orderId, status, items) => {
         try {
             if (status === 'confirmado') {
@@ -176,12 +182,17 @@ const AdminDashboard = () => {
                                     {o.status === 'pendiente' && (
                                         <>
                                             <button className="ml-button" style={{ background: '#28a745', flex: 1 }} onClick={() => handleUpdateOrderStatus(o.id, 'confirmado', o.items)}>
-                                                Confirmar & Descontar Stock
+                                                Confirmar & Descontar
                                             </button>
                                             <button className="ml-button" style={{ background: '#dc3545', flex: 1 }} onClick={() => handleUpdateOrderStatus(o.id, 'cancelado')}>
                                                 Cancelar
                                             </button>
                                         </>
+                                    )}
+                                    {o.status !== 'pendiente' && (
+                                        <button className="ml-button" style={{ background: '#6c757d', color: 'white', flex: 1 }} onClick={() => handleDeleteOrder(o.id)}>
+                                            <Trash2 size={18} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Borrar
+                                        </button>
                                     )}
                                     <a
                                         href={`https://wa.me/${o.customerPhone}?text=Hola%20${o.customerName},%20sobre%20tu%20pedido%20%23${o.id.slice(-6).toUpperCase()}`}
@@ -189,7 +200,7 @@ const AdminDashboard = () => {
                                         className="ml-button"
                                         style={{ background: '#25D366', textAlign: 'center', textDecoration: 'none', flex: 1 }}
                                     >
-                                        Contactar WhatsApp
+                                        WhatsApp
                                     </a>
                                 </div>
                             </div>
