@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { db, storage } from '../firebase/config';
 import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+
 import { X } from 'lucide-react';
 
 const ProductForm = ({ onClose, editingProduct }) => {
@@ -10,7 +10,7 @@ const ProductForm = ({ onClose, editingProduct }) => {
     const [price, setPrice] = useState('');
     const [stock, setStock] = useState('');
     const [category, setCategory] = useState('');
-    const [image, setImage] = useState(null);
+    const [imageUrlInput, setImageUrlInput] = useState('');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -20,6 +20,7 @@ const ProductForm = ({ onClose, editingProduct }) => {
             setPrice(editingProduct.price);
             setStock(editingProduct.stock);
             setCategory(editingProduct.category || '');
+            setImageUrlInput(editingProduct.imageUrl || '');
         }
     }, [editingProduct]);
 
@@ -28,21 +29,13 @@ const ProductForm = ({ onClose, editingProduct }) => {
         setLoading(true);
 
         try {
-            let imageUrl = editingProduct?.imageUrl || '';
-
-            if (image) {
-                const storageRef = ref(storage, `products/${Date.now()}_${image.name}`);
-                await uploadBytes(storageRef, image);
-                imageUrl = await getDownloadURL(storageRef);
-            }
-
             const productData = {
                 name,
                 description,
                 price: parseFloat(price),
                 stock: parseInt(stock),
                 category,
-                imageUrl,
+                imageUrl: imageUrlInput,
                 updatedAt: new Date()
             };
 
@@ -94,11 +87,8 @@ const ProductForm = ({ onClose, editingProduct }) => {
                         <input type="text" className="ml-input" value={category} onChange={e => setCategory(e.target.value)} />
                     </div>
                     <div style={{ marginBottom: '24px' }}>
-                        <label>Imagen del Producto</label>
-                        <input type="file" onChange={e => setImage(e.target.files[0])} accept="image/*" />
-                        {editingProduct && !image && (
-                            <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>Dejar vacío para mantener la imagen actual.</p>
-                        )}
+                        <label>Enlace de la Imagen (URL)</label>
+                        <input type="text" className="ml-input" value={imageUrlInput} onChange={e => setImageUrlInput(e.target.value)} placeholder="https://ejemplo.com/imagen.jpg" />
                     </div>
                     <button type="submit" className="ml-button" style={{ width: '100%' }} disabled={loading}>
                         {loading ? 'Guardando...' : editingProduct ? 'Actualizar Producto' : 'Crear Producto'}
