@@ -56,6 +56,7 @@ const ProductForm = ({ onClose, editingProduct }) => {
             }
             onClose();
         } catch (err) {
+            console.error('Error in handleSubmit:', err);
             alert('Error al guardar el producto: ' + err.message);
         } finally {
             setLoading(false);
