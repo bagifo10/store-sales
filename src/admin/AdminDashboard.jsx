@@ -1,23 +1,35 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
-import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, CheckCircle, XCircle } from 'lucide-react';
+import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag } from 'lucide-react';
+
+const DEFAULT_CATEGORIES = ['Tecnología', 'Moda', 'Supermercado'];
 
 const AdminDashboard = () => {
-    const [view, setView] = useState('products'); // 'products' or 'orders'
+    const [view, setView] = useState('products'); // 'products', 'orders', 'categories'
     const [products, setProducts] = useState([]);
     const [orders, setOrders] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const navigate = useNavigate();
 
     useEffect(() => {
         // Check if user is logged in
-        const unsubscribeAuth = auth.onAuthStateChanged(user => {
-            if (!user) navigate('/login');
+        const unsubscribeAuth = auth.onAuthStateChanged(async user => {
+            if (!user) { navigate('/login'); return; }
+
+            // Seed default categories if they don't exist yet
+            const snap = await getDocs(collection(db, 'categories'));
+            const existing = snap.docs.map(d => d.data().name);
+            for (const cat of DEFAULT_CATEGORIES) {
+                if (!existing.includes(cat)) {
+                    await addDoc(collection(db, 'categories'), { name: cat });
+                }
+            }
         });
 
         // Listen to products
@@ -32,16 +44,41 @@ const AdminDashboard = () => {
             setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
+        // Listen to categories
+        const qCats = query(collection(db, 'categories'));
+        const unsubscribeCategories = onSnapshot(qCats, (snapshot) => {
+            setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+
         return () => {
             unsubscribeAuth();
             unsubscribeProducts();
             unsubscribeOrders();
+            unsubscribeCategories();
         };
     }, [navigate]);
 
     const handleLogout = () => {
         signOut(auth);
         navigate('/login');
+    };
+
+    const handleCreateCategory = async () => {
+        const catName = window.prompt("Nombre de la nueva categoría:");
+        if (catName && catName.trim() !== '') {
+            try {
+                await addDoc(collection(db, 'categories'), { name: catName.trim() });
+            } catch (err) {
+                console.error("Error creating category:", err);
+                alert("Hubo un error al crear la categoría.");
+            }
+        }
+    };
+
+    const handleDeleteCategory = async (id) => {
+        if (window.confirm('¿Seguro que querés eliminar esta categoría?')) {
+            await deleteDoc(doc(db, 'categories', id));
+        }
     };
 
     const handleDeleteProduct = async (id) => {
@@ -94,6 +131,12 @@ const AdminDashboard = () => {
                     <ClipboardList size={20} style={{ marginRight: '10px' }} /> Pedidos
                 </div>
                 <div
+                    onClick={() => setView('categories')}
+                    style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', background: view === 'categories' ? '#444' : 'transparent', borderRadius: '4px', marginBottom: '8px' }}
+                >
+                    <Tag size={20} style={{ marginRight: '10px' }} /> Categorías
+                </div>
+                <div
                     onClick={handleLogout}
                     style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', marginTop: '40px', color: '#ff6b6b' }}
                 >
@@ -104,15 +147,56 @@ const AdminDashboard = () => {
             {/* Main Content */}
             <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
-                    <h1>{view === 'products' ? 'Inventario de Productos' : 'Pedidos de Clientes'}</h1>
+                    <h1>
+                        {view === 'products' ? 'Inventario de Productos' 
+                        : view === 'orders' ? 'Pedidos de Clientes' 
+                        : 'Gestión de Categorías'}
+                    </h1>
                     {view === 'products' && (
                         <button className="ml-button" onClick={() => { setEditingProduct(null); setShowForm(true); }}>
                             <Plus size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Nuevo Producto
                         </button>
                     )}
+                    {view === 'categories' && (
+                        <button className="ml-button" onClick={handleCreateCategory} style={{ background: '#28a745' }}>
+                            <Plus size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Nueva Categoría
+                        </button>
+                    )}
                 </div>
 
-                {view === 'products' ? (
+
+                {view === 'categories' && (
+                    <div className="ml-card">
+                        {categories.length === 0 && (
+                            <p style={{ color: '#999', textAlign: 'center', padding: '20px' }}>No hay categorías creadas aún.</p>
+                        )}
+                        {categories.map(cat => {
+                            const isDefault = DEFAULT_CATEGORIES.includes(cat.name);
+                            return (
+                                <div key={cat.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #eee' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <Tag size={18} color={isDefault ? '#ff9500' : '#3483fa'} />
+                                        <span style={{ fontWeight: 500 }}>{cat.name}</span>
+                                        {isDefault && (
+                                            <span style={{ fontSize: '11px', background: '#fff3cd', color: '#856404', padding: '2px 8px', borderRadius: '10px' }}>predeterminada</span>
+                                        )}
+                                    </div>
+                                    {!isDefault ? (
+                                        <Trash2
+                                            size={18}
+                                            style={{ cursor: 'pointer', color: '#ff6b6b' }}
+                                            onClick={() => handleDeleteCategory(cat.id)}
+                                        />
+                                    ) : (
+                                        <span style={{ fontSize: '12px', color: '#ccc' }}>🔒</span>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {view === 'products' && (
                     <div className="ml-card">
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
@@ -147,7 +231,9 @@ const AdminDashboard = () => {
                             </tbody>
                         </table>
                     </div>
-                ) : (
+                )}
+
+                {view === 'orders' && (
                     <div style={{ display: 'grid', gap: '20px' }}>
                         {orders.map(o => (
                             <div key={o.id} className="ml-card">

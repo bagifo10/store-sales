@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, storage } from '../firebase/config';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, getDocs } from 'firebase/firestore';
 
 import { X } from 'lucide-react';
 
@@ -12,8 +12,21 @@ const ProductForm = ({ onClose, editingProduct }) => {
     const [category, setCategory] = useState('');
     const [imageUrlInput, setImageUrlInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const [existingCategories, setExistingCategories] = useState([]);
 
     useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                // Lee de la colección real de categorías, no de los productos
+                const snapshot = await getDocs(collection(db, 'categories'));
+                const cats = snapshot.docs.map(d => d.data().name).filter(Boolean);
+                setExistingCategories(cats);
+            } catch (err) {
+                console.error("Error fetching categories:", err);
+            }
+        };
+        fetchCategories();
+        
         if (editingProduct) {
             setName(editingProduct.name);
             setDescription(editingProduct.description);
@@ -84,7 +97,17 @@ const ProductForm = ({ onClose, editingProduct }) => {
                     </div>
                     <div style={{ marginBottom: '16px' }}>
                         <label>Categoría</label>
-                        <input type="text" className="ml-input" value={category} onChange={e => setCategory(e.target.value)} />
+                        <select 
+                            className="ml-input" 
+                            value={category} 
+                            onChange={e => setCategory(e.target.value)} 
+                            required
+                        >
+                            <option value="" disabled>Seleccionar categoría...</option>
+                            {existingCategories.map((cat, idx) => (
+                                <option key={idx} value={cat}>{cat}</option>
+                            ))}
+                        </select>
                     </div>
                     <div style={{ marginBottom: '24px' }}>
                         <label>Enlace de la Imagen (URL)</label>
