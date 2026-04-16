@@ -110,7 +110,7 @@ const StoreFront = () => {
                         <p style={{ fontSize: '18px' }}>No hay productos en esta categoría aún.</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+                    <div className="product-grid">
                         {displayProducts.map(product => {
                             const { hasDiscount, discountPct } = getDiscountInfo(product.id, product.price);
                             return (

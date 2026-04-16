@@ -116,15 +116,24 @@ const AdminDashboard = () => {
 
     return (
         <div className="admin-layout">
+            <div className="admin-mobile-topbar">
+                <button style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }} onClick={() => setMenuOpen(true)}>
+                    <Menu size={24} />
+                </button>
+                <h2>Admin Shop</h2>
+            </div>
+
+            <div className={`admin-overlay ${menuOpen ? 'open' : ''}`} onClick={() => setMenuOpen(false)}></div>
+
             {/* Sidebar */}
-            <div className="admin-sidebar">
+            <div className={`admin-sidebar ${menuOpen ? 'open' : ''}`}>
                 <div className="admin-sidebar-header">
-                    <h2 style={{ marginBottom: '40px' }}>Admin Shop</h2>
-                    <button className="admin-menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
-                        <Menu size={24} />
+                    <h2 style={{ marginBottom: '40px', marginTop: 0 }}>Admin Shop</h2>
+                    <button className="admin-menu-toggle" onClick={() => setMenuOpen(false)} style={{ fontSize: '24px', background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: 0 }}>
+                        ✕
                     </button>
                 </div>
-                <div className={`admin-menu-items ${menuOpen ? 'open' : ''}`}>
+                <div className="admin-menu-items">
                 <div
                     onClick={() => setView('products')}
                     style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', background: view === 'products' ? '#444' : 'transparent', borderRadius: '4px', marginBottom: '8px' }}
