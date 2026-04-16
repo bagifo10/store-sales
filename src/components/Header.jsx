@@ -80,7 +80,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                 </div>
 
                 {/* Fila 2: Navegación */}
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '28px', marginTop: '12px', fontSize: '14px', color: '#333', paddingBottom: '6px' }}>
+                <div className="nav-categories">
 
                     {/* Categorías — con dropdown de todas */}
                     <div

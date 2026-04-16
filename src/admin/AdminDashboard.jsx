@@ -4,7 +4,7 @@ import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDo
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
-import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag } from 'lucide-react';
+import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag, Menu } from 'lucide-react';
 
 const DEFAULT_CATEGORIES = ['Tecnología', 'Moda', 'Supermercado'];
 
@@ -15,6 +15,7 @@ const AdminDashboard = () => {
     const [categories, setCategories] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -114,10 +115,16 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh' }}>
+        <div className="admin-layout">
             {/* Sidebar */}
-            <div style={{ width: '250px', background: '#333', color: 'white', padding: '20px' }}>
-                <h2 style={{ marginBottom: '40px' }}>Admin Shop</h2>
+            <div className="admin-sidebar">
+                <div className="admin-sidebar-header">
+                    <h2 style={{ marginBottom: '40px' }}>Admin Shop</h2>
+                    <button className="admin-menu-toggle" onClick={() => setMenuOpen(!menuOpen)}>
+                        <Menu size={24} />
+                    </button>
+                </div>
+                <div className={`admin-menu-items ${menuOpen ? 'open' : ''}`}>
                 <div
                     onClick={() => setView('products')}
                     style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', background: view === 'products' ? '#444' : 'transparent', borderRadius: '4px', marginBottom: '8px' }}
@@ -142,11 +149,12 @@ const AdminDashboard = () => {
                 >
                     <LogOut size={20} style={{ marginRight: '10px' }} /> Cerrar Sesión
                 </div>
+                </div>
             </div>
 
             {/* Main Content */}
-            <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <div className="admin-main">
+                <div className="admin-header-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                     <h1>
                         {view === 'products' ? 'Inventario de Productos' 
                         : view === 'orders' ? 'Pedidos de Clientes' 
@@ -197,7 +205,7 @@ const AdminDashboard = () => {
                 )}
 
                 {view === 'products' && (
-                    <div className="ml-card">
+                    <div className="ml-card table-responsive">
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>

@@ -71,3 +71,84 @@ body {
 .ml-input:focus {
   border-color: #3483fa;
 }
+
+/* Admin Dashboard Responsiveness */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-sidebar {
+  width: 250px;
+  background: #333;
+  color: white;
+  padding: 20px;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.admin-main {
+  flex: 1;
+  padding: 40px;
+  overflow-y: auto;
+  max-width: 100%;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.admin-menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+.admin-menu-items {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column;
+  }
+  .admin-sidebar {
+    width: 100%;
+    padding: 15px;
+  }
+  .admin-sidebar h2 {
+    margin-bottom: 0 !important;
+  }
+  .admin-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+  }
+  .admin-menu-toggle {
+    display: block;
+  }
+  .admin-menu-items {
+    display: none;
+  }
+  .admin-menu-items.open {
+    display: block;
+  }
+  .admin-main {
+    padding: 15px;
+  }
+  .admin-main h1 {
+    font-size: 20px;
+    margin-bottom: 15px;
+  }
+  .admin-header-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+}
+
