@@ -1,12 +1,27 @@
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
 
 const CartContext = createContext();
+const CART_KEY = 'shop_cart_items';
 
 export const useCart = () => useContext(CartContext);
 
+const loadCart = () => {
+    try {
+        const saved = localStorage.getItem(CART_KEY);
+        return saved ? JSON.parse(saved) : [];
+    } catch {
+        return [];
+    }
+};
+
 export const CartProvider = ({ children }) => {
-    const [cartItems, setCartItems] = useState([]);
+    const [cartItems, setCartItems] = useState(loadCart);
     const [cartOpen, setCartOpen] = useState(false);
+
+    // Sincronizar con localStorage cada vez que cambia el carrito
+    useEffect(() => {
+        localStorage.setItem(CART_KEY, JSON.stringify(cartItems));
+    }, [cartItems]);
 
     const addToCart = (product) => {
         const existing = cartItems.find(item => item.id === product.id);
