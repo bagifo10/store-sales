@@ -11,6 +11,11 @@ export const CartProvider = ({ children }) => {
     const addToCart = (product) => {
         const existing = cartItems.find(item => item.id === product.id);
         if (existing) {
+            if (existing.quantity >= (product.stock || 99)) {
+                // Ya alcanzó el máximo disponible
+                setCartOpen(true);
+                return;
+            }
             setCartItems(cartItems.map(item =>
                 item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
             ));

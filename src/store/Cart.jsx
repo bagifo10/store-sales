@@ -16,7 +16,8 @@ const Cart = ({ isOpen, onClose, items, setItems }) => {
     const updateQuantity = (id, delta) => {
         setItems(items.map(item => {
             if (item.id === id) {
-                const newQty = Math.max(1, item.quantity + delta);
+                const maxQty = item.stock || 99;
+                const newQty = Math.min(maxQty, Math.max(1, item.quantity + delta));
                 return { ...item, quantity: newQty };
             }
             return item;
@@ -64,11 +65,14 @@ const Cart = ({ isOpen, onClose, items, setItems }) => {
                                         </div>
                                         <div style={{ fontSize: '18px', fontWeight: 600 }}>${formatPrice(item.price)}</div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
-                                            <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
-                                                <button style={{ border: 'none', background: 'none', padding: '4px 10px', cursor: 'pointer' }} onClick={() => updateQuantity(item.id, -1)}>-</button>
-                                                <span style={{ padding: '4px 10px', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd' }}>{item.quantity}</span>
-                                                <button style={{ border: 'none', background: 'none', padding: '4px 10px', cursor: 'pointer' }} onClick={() => updateQuantity(item.id, 1)}>+</button>
+                                            <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px', alignItems: 'center' }}>
+                                                <button style={{ border: 'none', background: '#f5f5f5', padding: '6px 12px', cursor: 'pointer', color: '#333', fontSize: '16px', fontWeight: 'bold', borderRadius: '4px 0 0 4px' }} onClick={() => updateQuantity(item.id, -1)}>−</button>
+                                                <span style={{ padding: '6px 14px', borderLeft: '1px solid #ddd', borderRight: '1px solid #ddd', fontSize: '14px', fontWeight: 500, color: '#333', minWidth: '20px', textAlign: 'center' }}>{item.quantity}</span>
+                                                <button style={{ border: 'none', background: '#f5f5f5', padding: '6px 12px', cursor: item.quantity >= (item.stock || 99) ? 'not-allowed' : 'pointer', color: item.quantity >= (item.stock || 99) ? '#ccc' : '#333', fontSize: '16px', fontWeight: 'bold', borderRadius: '0 4px 4px 0' }} onClick={() => updateQuantity(item.id, 1)} disabled={item.quantity >= (item.stock || 99)}>+</button>
                                             </div>
+                                            {item.stock && item.quantity >= item.stock && (
+                                                <span style={{ fontSize: '12px', color: '#e74c3c' }}>Máx. disponible</span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
