@@ -45,22 +45,22 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     };
 
     return (
-        <header style={{ background: '#fff159', padding: '10px 0', position: 'sticky', top: 0, zIndex: 200 }}>
-            <div className="ml-container">
+        <header style={{ background: '#2563eb', color: 'white', position: 'sticky', top: 0, zIndex: 200 }}>
+            <div className="ml-container" style={{ paddingTop: '10px', paddingBottom: '10px' }}>
                 {/* Fila 1: Logo, Buscador, Carrito */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <h1
                         onClick={goToStore}
                         style={{ margin: 0, fontSize: '24px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                     >
-                        Mi Tienda
+                        Tu logo
                     </h1>
                     <div style={{ flex: 1, position: 'relative' }}>
                         <input
                             type="text"
                             className="ml-input"
                             placeholder="Buscar productos, marcas y más..."
-                            style={{ paddingLeft: '40px', background: 'white', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', width: '100%' }}
+                            style={{ paddingLeft: '40px', background: 'white', border: 'none', boxShadow: '0 1px 2px rgba(0,0,0,0.1)', width: '100%', color: '#333' }}
                             value={searchTerm || ''}
                             onChange={(e) => setSearchTerm && setSearchTerm(e.target.value)}
                         />
@@ -80,7 +80,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                 </div>
 
                 {/* Fila 2: Navegación */}
-                <div className="nav-categories">
+                <div className="nav-categories" style={{ color: 'white' }}>
 
                     {/* Categorías — con dropdown de todas */}
                     <div
@@ -101,7 +101,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                             }}>
                                 <div
                                     onClick={goToStore}
-                                    style={{ padding: '10px 18px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontWeight: 600, color: '#3483fa' }}
+                                    style={{ padding: '10px 18px', cursor: 'pointer', borderBottom: '1px solid #f0f0f0', fontWeight: 600, color: '#2563eb' }}
                                     onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
                                     onMouseOut={e => e.currentTarget.style.background = 'white'}
                                 >
@@ -114,7 +114,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                                     <div
                                         key={i}
                                         onClick={() => goToCategory(cat)}
-                                        style={{ padding: '10px 18px', cursor: 'pointer', borderBottom: '1px solid #f5f5f5' }}
+                                        style={{ padding: '10px 18px', cursor: 'pointer', borderBottom: '1px solid #f5f5f5', color: '#333' }}
                                         onMouseOver={e => e.currentTarget.style.background = '#f5f5f5'}
                                         onMouseOut={e => e.currentTarget.style.background = 'white'}
                                     >

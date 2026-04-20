@@ -3,6 +3,7 @@ import { db } from '../firebase/config';
 import { collection, query, onSnapshot } from 'firebase/firestore';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import Cart from './Cart';
 import PriceDisplay from '../components/PriceDisplay';
 import { useCart } from '../context/CartContext';
@@ -126,7 +127,7 @@ const StoreFront = () => {
                                     {hasDiscount && (
                                         <div style={{
                                             position: 'absolute', top: '10px', left: '10px',
-                                            background: '#00a650', color: 'white',
+                                            background: '#16a34a', color: 'white',
                                             fontSize: '12px', fontWeight: 700,
                                             padding: '3px 8px', borderRadius: '4px',
                                             zIndex: 1,
@@ -154,7 +155,8 @@ const StoreFront = () => {
                                                 Sin stock
                                             </div>
                                         )}
-                                        <div style={{ color: '#00a650', fontSize: '14px', marginTop: 'auto', fontWeight: '500' }}>
+
+                                        <div style={{ color: '#2563eb', fontSize: '14px', marginTop: 'auto', fontWeight: '500' }}>
                                             Ver detalles
                                         </div>
                                     </div>
@@ -171,6 +173,8 @@ const StoreFront = () => {
                 items={cartItems}
                 setItems={setCartItems}
             />
+
+            <Footer />
         </div>
     );
 };

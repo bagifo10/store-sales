@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../firebase/config';
 import { doc, getDoc, collection, query, where, getDocs, limit } from 'firebase/firestore';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import Cart from './Cart';
 import PriceDisplay from '../components/PriceDisplay';
 import { useCart } from '../context/CartContext';
@@ -123,11 +124,11 @@ const ProductDetail = () => {
 
                         {/* Stock */}
                         <div style={{ marginBottom: '30px' }}>
-                            <div style={{ fontSize: '16px', fontWeight: 500, color: product.stock > 0 ? '#00a650' : 'red', marginBottom: '5px' }}>
+                            <div style={{ fontSize: '16px', fontWeight: 500, color: product.stock > 0 ? '#16a34a' : 'red', marginBottom: '5px' }}>
                                 {product.stock > 0 ? 'Stock disponible' : 'Sin stock'}
                             </div>
                             {product.stock <= 5 && product.stock > 0 && (
-                                <div style={{ color: '#f73', fontSize: '14px' }}>
+                                <div style={{ color: '#ea580c', fontSize: '14px' }}>
                                     ¡Apúrate! Últimas {product.stock} unidades
                                 </div>
                             )}
@@ -154,7 +155,7 @@ const ProductDetail = () => {
                         </button>
 
                         <div style={{ display: 'flex', gap: '10px', marginTop: '20px', color: '#666', fontSize: '14px' }}>
-                            <span style={{ color: '#00a650' }}>✔️ Compra Protegida</span>, recibe el producto que esperabas o te devolvemos tu dinero.
+                            <span style={{ color: '#16a34a' }}>✔️ Compra Protegida</span>recibe el producto que esperabas o te devolvemos tu dinero.
                         </div>
 
                         {/* Descripción */}
@@ -164,6 +165,7 @@ const ProductDetail = () => {
                                 {product.description || "Este producto no tiene descripción."}
                             </p>
                         </div>
+
 
                     </div>
                 </div>
@@ -205,6 +207,7 @@ const ProductDetail = () => {
                 items={cartItems}
                 setItems={setCartItems}
             />
+            <Footer />
         </div>
     );
 };
