@@ -88,11 +88,11 @@ const ProductForm = ({ onClose, editingProduct }) => {
                     <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                         <div style={{ flex: 1 }}>
                             <label>Precio ($)</label>
-                            <input type="number" className="ml-input" value={price} onChange={e => setPrice(e.target.value)} required />
+                            <input type="number" className="ml-input" value={price} onChange={e => setPrice(e.target.value)} onWheel={e => e.target.blur()} required />
                         </div>
                         <div style={{ flex: 1 }}>
                             <label>Stock</label>
-                            <input type="number" className="ml-input" value={stock} onChange={e => setStock(e.target.value)} required />
+                            <input type="number" className="ml-input" value={stock} onChange={e => setStock(e.target.value)} onWheel={e => e.target.blur()} required />
                         </div>
                     </div>
                     <div style={{ marginBottom: '16px' }}>

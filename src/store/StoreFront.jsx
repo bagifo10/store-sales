@@ -138,7 +138,7 @@ const StoreFront = () => {
                                     <img
                                         src={product.imageUrl || 'https://via.placeholder.com/200'}
                                         alt={product.name}
-                                        style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+                                        style={{ width: '100%', height: '200px', objectFit: 'contain', background: '#fff', padding: '10px' }}
                                     />
                                     <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                         <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 400 }}>{product.name}</h3>

@@ -10,6 +10,7 @@
  */
 
 import { getDiscountInfo } from '../hooks/usePriceHistory';
+import { formatPrice } from '../utils/formatPrice';
 
 const SIZES = {
     sm: { current: '18px', previous: '13px' },
@@ -33,7 +34,7 @@ const PriceDisplay = ({ productId, currentPrice, size = 'md', showBadge = true }
                             fontWeight: 400,
                         }}
                     >
-                        ${previousPrice}
+                        ${formatPrice(previousPrice)}
                     </span>
                     {showBadge && (
                         <span style={{
@@ -58,7 +59,7 @@ const PriceDisplay = ({ productId, currentPrice, size = 'md', showBadge = true }
                     lineHeight: 1.1,
                 }}
             >
-                ${currentPrice}
+                ${formatPrice(currentPrice)}
             </span>
         </div>
     );

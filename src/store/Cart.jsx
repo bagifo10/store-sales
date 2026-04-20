@@ -1,7 +1,7 @@
 import { X, Trash2, ChevronRight } from 'lucide-react';
 import { useState } from 'react';
 import Checkout from './Checkout';
-
+import { formatPrice } from '../utils/formatPrice';
 const Cart = ({ isOpen, onClose, items, setItems }) => {
     const [showCheckout, setShowCheckout] = useState(false);
 
@@ -56,13 +56,13 @@ const Cart = ({ isOpen, onClose, items, setItems }) => {
                         <div style={{ display: 'grid', gap: '20px' }}>
                             {items.map(item => (
                                 <div key={item.id} style={{ display: 'flex', gap: '15px', borderBottom: '1px solid #f5f5f5', paddingBottom: '15px' }}>
-                                    <img src={item.imageUrl} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '4px' }} />
+                                    <img src={item.imageUrl} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'contain', borderRadius: '4px', background: '#fff' }} />
                                     <div style={{ flex: 1 }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
                                             <span style={{ fontWeight: 500 }}>{item.name}</span>
                                             <Trash2 size={18} style={{ cursor: 'pointer', color: '#999' }} onClick={() => removeItem(item.id)} />
                                         </div>
-                                        <div style={{ fontSize: '18px', fontWeight: 600 }}>${item.price}</div>
+                                        <div style={{ fontSize: '18px', fontWeight: 600 }}>${formatPrice(item.price)}</div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '10px' }}>
                                             <div style={{ display: 'flex', border: '1px solid #ddd', borderRadius: '4px' }}>
                                                 <button style={{ border: 'none', background: 'none', padding: '4px 10px', cursor: 'pointer' }} onClick={() => updateQuantity(item.id, -1)}>-</button>
@@ -81,7 +81,7 @@ const Cart = ({ isOpen, onClose, items, setItems }) => {
                     <div style={{ padding: '20px', borderTop: '1px solid #eee', background: '#fafafa' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '20px', fontWeight: 600 }}>
                             <span>Subtotal</span>
-                            <span>${total}</span>
+                            <span>${formatPrice(total)}</span>
                         </div>
                         <div style={{color: '#666', fontSize: '14px', marginBottom: '15px'}}>
                             * El costo de envío se calculará en el pago final.

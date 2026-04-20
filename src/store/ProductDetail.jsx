@@ -186,7 +186,7 @@ const ProductDetail = () => {
                                     <img
                                         src={sim.imageUrl || 'https://via.placeholder.com/200'}
                                         alt={sim.name}
-                                        style={{ width: '100%', height: '200px', objectFit: 'cover', borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }}
+                                        style={{ width: '100%', height: '200px', objectFit: 'contain', background: '#fff', padding: '10px', borderTopLeftRadius: '8px', borderTopRightRadius: '8px' }}
                                     />
                                     <div style={{ padding: '15px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                                         <div style={{ marginBottom: '5px' }}>

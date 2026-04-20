@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, increment } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
 import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag, Menu } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
 
 const DEFAULT_CATEGORIES = ['Tecnología', 'Moda', 'Supermercado'];
 
@@ -103,7 +104,7 @@ const AdminDashboard = () => {
                     const product = products.find(p => p.id === item.productId);
                     if (product) {
                         await updateDoc(productRef, {
-                            stock: product.stock - item.quantity
+                            stock: increment(-item.quantity)
                         });
                     }
                 }
@@ -230,11 +231,11 @@ const AdminDashboard = () => {
                                     <tr key={p.id} style={{ borderBottom: '1px solid #eee' }}>
                                         <td style={{ padding: '12px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center' }}>
-                                                <img src={p.imageUrl} alt={p.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px', marginRight: '10px' }} />
+                                                <img src={p.imageUrl} alt={p.name} style={{ width: '40px', height: '40px', objectFit: 'contain', background: '#fff', borderRadius: '4px', marginRight: '10px' }} />
                                                 <span>{p.name}</span>
                                             </div>
                                         </td>
-                                        <td style={{ padding: '12px' }}>${p.price}</td>
+                                        <td style={{ padding: '12px' }}>${formatPrice(p.price)}</td>
                                         <td style={{ padding: '12px' }}>{p.stock}</td>
                                         <td style={{ padding: '12px' }}>
                                             {p.stock > 0 ? <span style={{ color: 'green' }}>Disponible</span> : <span style={{ color: 'red' }}>Sin Stock</span>}
@@ -269,16 +270,19 @@ const AdminDashboard = () => {
                                 <div style={{ marginBottom: '15px' }}>
                                     <p><strong>Cliente:</strong> {o.customerName}</p>
                                     <p><strong>Teléfono:</strong> {o.customerPhone}</p>
+                                    <p><strong>Método de pago:</strong> {o.paymentMethod || 'No especificado'}</p>
+                                    {o.shippingOption && <p><strong>Envío:</strong> {o.shippingOption}</p>}
+                                    {o.customerAddress && <p><strong>Dirección:</strong> {o.customerAddress}</p>}
                                 </div>
                                 <div style={{ borderTop: '1px solid #eee', paddingTop: '10px' }}>
                                     {o.items.map((item, idx) => (
                                         <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
                                             <span>{item.name} x {item.quantity}</span>
-                                            <span>${item.price * item.quantity}</span>
+                                            <span>${formatPrice(item.price * item.quantity)}</span>
                                         </div>
                                     ))}
                                     <div style={{ marginTop: '10px', textAlign: 'right', fontWeight: 'bold' }}>
-                                        Total: ${o.total}
+                                        Total: ${formatPrice(o.total)}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>

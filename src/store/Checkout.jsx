@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { db } from '../firebase/config';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { ChevronLeft, CheckCircle } from 'lucide-react';
+import { formatPrice } from '../utils/formatPrice';
 
 // === CONFIGURACIÓN DE TU TIENDA ===
 const CONFIG_TELEFONO = "5491100000000"; // PONE TU NUMERO DE WHATSAPP ACÁ
 const CONFIG_ENVIOS = [
-    { id: 'retiro', nombre: 'Retiro en persona / Coordinar', precio: 0 },
-    { id: 'caba', nombre: 'Envío a Capital Federal', precio: 3000 },
-    { id: 'resto', nombre: 'Envío al resto del país', precio: 6000 }
+    { id: 'retiro', nombre: 'Retiro en local', precio: 0 },
+    { id: 'domicilio', nombre: 'Envío a domicilio (Solo en Tandil)', precio: 5000 }
 ];
 // ==================================
 
@@ -17,6 +17,7 @@ const Checkout = ({ items, total, onBack, onClose }) => {
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
     const [shipping, setShipping] = useState(CONFIG_ENVIOS[0]);
+    const [paymentMethod, setPaymentMethod] = useState('Efectivo');
     const [loading, setLoading] = useState(false);
     const [orderId, setOrderId] = useState(null);
 
@@ -43,9 +44,10 @@ const Checkout = ({ items, total, onBack, onClose }) => {
             const orderData = {
                 customerName: name,
                 customerPhone: phone,
-                customerAddress: address,
+                customerAddress: shipping.id === 'domicilio' ? address : '',
                 shippingOption: shipping.nombre,
                 shippingCost: shipping.precio,
+                paymentMethod: paymentMethod,
                 subtotal: total,
                 items: items.map(item => ({
                     productId: item.id,
@@ -68,7 +70,7 @@ const Checkout = ({ items, total, onBack, onClose }) => {
     };
 
     if (orderId) {
-        const urlParams = encodeURIComponent(`¡Hola! Acabo de hacer el pedido #${orderId.slice(-6).toUpperCase()}.\n\nLlevo: ${items.map(i => `${i.quantity}x ${i.name}`).join(', ')}.\nSubtotal: $${total}\nEnvío (${shipping.nombre}): $${shipping.precio}\nTotal Final: $${finalTotal}\n\nSoy ${name}. Mi dirección es: ${address}. Te paso el comprobante de pago...`);
+        const urlParams = encodeURIComponent(`¡Hola! Acabo de hacer el pedido #${orderId.slice(-6).toUpperCase()}.\n\nLlevo: ${items.map(i => `${i.quantity}x ${i.name}`).join(', ')}.\nSubtotal: $${formatPrice(total)}\nEnvío (${shipping.nombre}): $${formatPrice(shipping.precio)}\nTotal Final: $${formatPrice(finalTotal)}\nMétodo de pago: ${paymentMethod}\n${shipping.id === 'domicilio' ? `\nSoy ${name}. Mi dirección es: ${address}.` : `\nSoy ${name}. Paso a retirar.`} Te paso el comprobante de pago...`);
         const wpUrl = `https://wa.me/${CONFIG_TELEFONO}?text=${urlParams}`;
 
         return (
@@ -101,15 +103,15 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                         <h3 style={{ marginTop: 0 }}>Resumen del pedido</h3>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', marginBottom: '8px' }}>
                             <span>Subtotal ({items.length} prod):</span>
-                            <span>${total}</span>
+                            <span>${formatPrice(total)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', marginBottom: '10px' }}>
                             <span>Envío:</span>
-                            <span>${shipping.precio}</span>
+                            <span>${formatPrice(shipping.precio)}</span>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', paddingTop: '10px', fontWeight: 'bold', fontSize: '18px' }}>
                             <span>Total Final:</span>
-                            <span>${finalTotal}</span>
+                            <span>${formatPrice(finalTotal)}</span>
                         </div>
                     </div>
 
@@ -122,8 +124,19 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                                 onChange={(e) => setShipping(CONFIG_ENVIOS.find(s => s.id === e.target.value))}
                             >
                                 {CONFIG_ENVIOS.map(env => (
-                                    <option key={env.id} value={env.id}>{env.nombre} - ${env.precio}</option>
+                                    <option key={env.id} value={env.id}>{env.nombre} - ${formatPrice(env.precio)}</option>
                                 ))}
+                            </select>
+                        </div>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label>Método de Pago</label>
+                            <select 
+                                className="ml-input" 
+                                value={paymentMethod} 
+                                onChange={(e) => setPaymentMethod(e.target.value)}
+                            >
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
                             </select>
                         </div>
                         <div style={{ marginBottom: '16px' }}>
@@ -148,17 +161,19 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                                 placeholder="Ej: 5491112345678"
                             />
                         </div>
-                        <div style={{ marginBottom: '24px' }}>
-                            <label>Dirección de Envío</label>
-                            <textarea
-                                className="ml-input"
-                                value={address}
-                                onChange={e => setAddress(e.target.value)}
-                                required
-                                placeholder="Calle, Número, Localidad..."
-                                style={{ minHeight: '80px' }}
-                            />
-                        </div>
+                        {shipping.id === 'domicilio' && (
+                            <div style={{ marginBottom: '24px' }}>
+                                <label>Dirección de Envío</label>
+                                <textarea
+                                    className="ml-input"
+                                    value={address}
+                                    onChange={e => setAddress(e.target.value)}
+                                    required
+                                    placeholder="Calle, Número, Localidad..."
+                                    style={{ minHeight: '80px' }}
+                                />
+                            </div>
+                        )}
                         <button type="submit" className="ml-button" style={{ width: '100%' }} disabled={loading}>
                             {loading ? 'Procesando...' : 'Confirmar Pedido'}
                         </button>
