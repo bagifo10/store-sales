@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, auth } from '../firebase/config';
-import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, increment } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDocs, getDoc, increment } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
@@ -17,12 +17,14 @@ const AdminDashboard = () => {
     const [showForm, setShowForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [menuOpen, setMenuOpen] = useState(false);
+    const [authLoading, setAuthLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         // Check if user is logged in
         const unsubscribeAuth = auth.onAuthStateChanged(async user => {
             if (!user) { navigate('/login'); return; }
+            setAuthLoading(false);
 
             // Seed default categories if they don't exist yet
             const snap = await getDocs(collection(db, 'categories'));
@@ -70,8 +72,7 @@ const AdminDashboard = () => {
         if (catName && catName.trim() !== '') {
             try {
                 await addDoc(collection(db, 'categories'), { name: catName.trim() });
-            } catch (err) {
-                console.error("Error creating category:", err);
+            } catch (_) {
                 alert("Hubo un error al crear la categoría.");
             }
         }
@@ -98,22 +99,47 @@ const AdminDashboard = () => {
     const handleUpdateOrderStatus = async (orderId, status, items) => {
         try {
             if (status === 'confirmado') {
-                // Reducir stock logic
+                // 1. Verificar stock actual desde Firestore ANTES de confirmar
+                const stockIssues = [];
                 for (const item of items) {
                     const productRef = doc(db, 'products', item.productId);
-                    const product = products.find(p => p.id === item.productId);
-                    if (product) {
-                        await updateDoc(productRef, {
-                            stock: increment(-item.quantity)
-                        });
+                    const productSnap = await getDoc(productRef);
+                    if (!productSnap.exists()) {
+                        stockIssues.push(`"${item.name}" ya no existe en el inventario.`);
+                        continue;
                     }
+                    const currentStock = productSnap.data().stock;
+                    if (currentStock < item.quantity) {
+                        stockIssues.push(`"${item.name}": pedido ${item.quantity}, stock actual ${currentStock}.`);
+                    }
+                }
+
+                if (stockIssues.length > 0) {
+                    alert(`⚠️ No se puede confirmar el pedido.\n\nProblemas de stock:\n• ${stockIssues.join('\n• ')}\n\nAjustá el stock o cancelá el pedido.`);
+                    return;
+                }
+
+                // 2. Reducir stock (ya verificado)
+                for (const item of items) {
+                    const productRef = doc(db, 'products', item.productId);
+                    await updateDoc(productRef, {
+                        stock: increment(-item.quantity)
+                    });
                 }
             }
             await updateDoc(doc(db, 'orders', orderId), { status });
-        } catch (err) {
-            console.error("Error updating order:", err);
+        } catch (_) {
+            alert('Error al actualizar el pedido. Intentá de nuevo.');
         }
     };
+
+    if (authLoading) {
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f5f5f5' }}>
+                <p style={{ color: '#666', fontSize: '16px' }}>Verificando acceso...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="admin-layout">
@@ -302,8 +328,9 @@ const AdminDashboard = () => {
                                         </button>
                                     )}
                                     <a
-                                        href={`https://wa.me/${o.customerPhone}?text=Hola%20${o.customerName},%20sobre%20tu%20pedido%20%23${o.id.slice(-6).toUpperCase()}`}
+                                        href={`https://wa.me/${o.customerPhone}?text=Hola%20${encodeURIComponent(o.customerName)},%20sobre%20tu%20pedido%20%23${o.id.slice(-6).toUpperCase()}`}
                                         target="_blank"
+                                        rel="noopener noreferrer"
                                         className="ml-button"
                                         style={{ background: '#25D366', textAlign: 'center', textDecoration: 'none', flex: 1 }}
                                     >

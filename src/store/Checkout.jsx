@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
 import { ChevronLeft, CheckCircle } from 'lucide-react';
@@ -20,11 +20,20 @@ const Checkout = ({ items, total, onBack, onClose }) => {
     const [paymentMethod, setPaymentMethod] = useState('Efectivo');
     const [loading, setLoading] = useState(false);
     const [orderId, setOrderId] = useState(null);
+    const lastSubmitRef = useRef(0);
 
     const finalTotal = total + shipping.precio;
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Rate limit: prevent double-click (min 3s between submits)
+        const now = Date.now();
+        if (now - lastSubmitRef.current < 3000) return;
+        lastSubmitRef.current = now;
+        // Input validation
+        if (name.trim().length < 2) { alert('El nombre debe tener al menos 2 caracteres.'); return; }
+        if (!/^\d{7,15}$/.test(phone.replace(/[\s\-+]/g, ''))) { alert('Ingresá un teléfono válido (solo números, 7-15 dígitos).'); return; }
+        if (shipping.id === 'domicilio' && address.trim().length < 5) { alert('La dirección debe tener al menos 5 caracteres.'); return; }
         setLoading(true);
 
         try {
@@ -81,7 +90,7 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                     <p style={{ color: '#666', marginBottom: '10px' }}>Tu número de pedido es: <br /><strong>#{orderId.slice(-6).toUpperCase()}</strong></p>
                     <p style={{ marginBottom: '30px' }}>Por favor envíanos un mensaje por WhatsApp para coordinar el pago y la entrega.</p>
                     
-                    <a href={wpUrl} target="_blank" className="ml-button" style={{ display: 'block', background: '#25D366', marginBottom: '15px', textDecoration: 'none' }}>
+                    <a href={wpUrl} target="_blank" rel="noopener noreferrer" className="ml-button" style={{ display: 'block', background: '#25D366', marginBottom: '15px', textDecoration: 'none' }}>
                         Enviar Detalle por WhatsApp
                     </a>
                     <button className="ml-button" style={{ background: '#eee', color: '#333', width: '100%' }} onClick={onClose}>Volver a la tienda</button>
@@ -147,6 +156,8 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                                 value={name}
                                 onChange={e => setName(e.target.value)}
                                 required
+                                minLength={2}
+                                maxLength={100}
                                 placeholder="Ej: Juan Pérez"
                             />
                         </div>
@@ -158,6 +169,8 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                                 value={phone}
                                 onChange={e => setPhone(e.target.value)}
                                 required
+                                pattern="[0-9+\-\s]{7,20}"
+                                maxLength={20}
                                 placeholder="Ej: 5491112345678"
                             />
                         </div>

@@ -1,14 +1,10 @@
 [
     {
         "origin": [
-            "*"
+            "https://bagifo10.github.io"
         ],
         "method": [
-            "GET",
-            "POST",
-            "PUT",
-            "DELETE",
-            "HEAD"
+            "GET"
         ],
         "responseHeader": [
             "Content-Type"

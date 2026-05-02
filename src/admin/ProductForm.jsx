@@ -21,8 +21,8 @@ const ProductForm = ({ onClose, editingProduct }) => {
                 const snapshot = await getDocs(collection(db, 'categories'));
                 const cats = snapshot.docs.map(d => d.data().name).filter(Boolean);
                 setExistingCategories(cats);
-            } catch (err) {
-                console.error("Error fetching categories:", err);
+            } catch (_) {
+                // Categories failed to load silently
             }
         };
         fetchCategories();
@@ -39,6 +39,11 @@ const ProductForm = ({ onClose, editingProduct }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        // Validate inputs
+        if (name.trim().length < 2) { alert('El nombre debe tener al menos 2 caracteres.'); return; }
+        if (parseFloat(price) <= 0 || isNaN(parseFloat(price))) { alert('El precio debe ser mayor a 0.'); return; }
+        if (parseInt(stock) < 0 || isNaN(parseInt(stock))) { alert('El stock no puede ser negativo.'); return; }
+        if (imageUrlInput && !imageUrlInput.match(/^https?:\/\/.+/i)) { alert('La URL de la imagen debe empezar con http:// o https://'); return; }
         setLoading(true);
 
         try {
@@ -62,8 +67,8 @@ const ProductForm = ({ onClose, editingProduct }) => {
             }
             onClose();
         } catch (err) {
-            console.error('Error in handleSubmit:', err);
-            alert('Error al guardar el producto: ' + err.message);
+            // Error handled silently
+            alert('Error al guardar el producto.');
         } finally {
             setLoading(false);
         }
@@ -79,7 +84,7 @@ const ProductForm = ({ onClose, editingProduct }) => {
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '16px' }}>
                         <label>Nombre</label>
-                        <input type="text" className="ml-input" value={name} onChange={e => setName(e.target.value)} required />
+                        <input type="text" className="ml-input" value={name} onChange={e => setName(e.target.value)} required minLength={2} maxLength={200} />
                     </div>
                     <div style={{ marginBottom: '16px' }}>
                         <label>Descripción</label>
@@ -88,11 +93,11 @@ const ProductForm = ({ onClose, editingProduct }) => {
                     <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
                         <div style={{ flex: 1 }}>
                             <label>Precio ($)</label>
-                            <input type="number" className="ml-input" value={price} onChange={e => setPrice(e.target.value)} onWheel={e => e.target.blur()} required />
+                            <input type="number" className="ml-input" value={price} onChange={e => setPrice(e.target.value)} onWheel={e => e.target.blur()} required min="0.01" step="0.01" />
                         </div>
                         <div style={{ flex: 1 }}>
                             <label>Stock</label>
-                            <input type="number" className="ml-input" value={stock} onChange={e => setStock(e.target.value)} onWheel={e => e.target.blur()} required />
+                            <input type="number" className="ml-input" value={stock} onChange={e => setStock(e.target.value)} onWheel={e => e.target.blur()} required min="0" />
                         </div>
                     </div>
                     <div style={{ marginBottom: '16px' }}>

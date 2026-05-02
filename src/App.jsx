@@ -7,6 +7,13 @@ import Landing from './components/Landing';
 import WhatsAppButton from './components/WhatsAppButton';
 import { CartProvider } from './context/CartContext';
 
+// Páginas legales y contacto
+import TermsAndConditions from './pages/TermsAndConditions';
+import ShippingReturns from './pages/ShippingReturns';
+import FAQ from './pages/FAQ';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import ContactPage from './pages/ContactPage';
+
 function App() {
     return (
         <CartProvider>
@@ -18,6 +25,13 @@ function App() {
                     {/* Store Routes */}
                     <Route path="/store" element={<StoreFront />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
+
+                    {/* Legal & Info Pages */}
+                    <Route path="/terminos" element={<TermsAndConditions />} />
+                    <Route path="/envios" element={<ShippingReturns />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/privacidad" element={<PrivacyPolicy />} />
+                    <Route path="/contacto" element={<ContactPage />} />
 
                     {/* Admin Routes */}
                     <Route path="/admin" element={<AdminDashboard />} />
