@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { db } from '../firebase/config';
-import { collection, addDoc, doc, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, getDoc, query, where, getDocs, updateDoc, increment } from 'firebase/firestore';
 import { ChevronLeft, CheckCircle } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
@@ -20,9 +20,86 @@ const Checkout = ({ items, total, onBack, onClose }) => {
     const [paymentMethod, setPaymentMethod] = useState('Efectivo');
     const [loading, setLoading] = useState(false);
     const [orderId, setOrderId] = useState(null);
+    
+    // Promo Codes state
+    const [promoCodeInput, setPromoCodeInput] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [discountAmount, setDiscountAmount] = useState(0);
+    const [promoError, setPromoError] = useState('');
+    const [validatingPromo, setValidatingPromo] = useState(false);
+
     const lastSubmitRef = useRef(0);
 
-    const finalTotal = total + shipping.precio;
+    const finalTotal = Math.max(0, total - discountAmount) + shipping.precio;
+
+    const handleApplyPromo = async () => {
+        setPromoError('');
+        if (!promoCodeInput.trim()) return;
+        setValidatingPromo(true);
+        
+        try {
+            const q = query(collection(db, 'promo_codes'), where('code', '==', promoCodeInput.trim().toUpperCase()));
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                setPromoError('Código inválido o no existe.');
+                setAppliedPromo(null);
+                setDiscountAmount(0);
+                return;
+            }
+            
+            const promoDoc = snap.docs[0];
+            const promo = { id: promoDoc.id, ...promoDoc.data() };
+            
+            if (!promo.isActive) {
+                setPromoError('Este código ya no está activo.');
+                return;
+            }
+            if (promo.usageLimit > 0 && promo.timesUsed >= promo.usageLimit) {
+                setPromoError('Este código ha superado el límite de usos permitidos.');
+                return;
+            }
+            
+            let calculatedDiscount = 0;
+            
+            if (promo.conditionType === 'all') {
+                calculatedDiscount = promo.discountType === 'percentage' ? (total * promo.discountValue / 100) : promo.discountValue;
+            } else if (promo.conditionType === 'min_amount') {
+                if (total < promo.conditionValue) {
+                    setPromoError(`La compra debe ser de al menos $${formatPrice(promo.conditionValue)} para usar este código.`);
+                    return;
+                }
+                calculatedDiscount = promo.discountType === 'percentage' ? (total * promo.discountValue / 100) : promo.discountValue;
+            } else if (promo.conditionType === 'category') {
+                const categoryItemsSubtotal = items
+                    .filter(item => item.category === promo.conditionValue)
+                    .reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                    
+                if (categoryItemsSubtotal === 0) {
+                    setPromoError(`Este código solo aplica para productos de la categoría: ${promo.conditionValue}.`);
+                    return;
+                }
+                calculatedDiscount = promo.discountType === 'percentage' ? (categoryItemsSubtotal * promo.discountValue / 100) : Math.min(promo.discountValue, categoryItemsSubtotal);
+            }
+            
+            if (promo.discountType === 'fixed' && promo.conditionType !== 'category') {
+                calculatedDiscount = Math.min(promo.discountValue, total);
+            }
+
+            setAppliedPromo(promo);
+            setDiscountAmount(calculatedDiscount);
+            setPromoCodeInput('');
+        } catch (error) {
+            setPromoError('Hubo un error al validar el código.');
+        } finally {
+            setValidatingPromo(false);
+        }
+    };
+
+    const handleRemovePromo = () => {
+        setAppliedPromo(null);
+        setDiscountAmount(0);
+        setPromoError('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -58,6 +135,8 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                 shippingCost: shipping.precio,
                 paymentMethod: paymentMethod,
                 subtotal: total,
+                promoCode: appliedPromo ? appliedPromo.code : null,
+                discountApplied: discountAmount,
                 items: items.map(item => ({
                     productId: item.id,
                     name: item.name,
@@ -70,6 +149,14 @@ const Checkout = ({ items, total, onBack, onClose }) => {
             };
 
             const docRef = await addDoc(collection(db, 'orders'), orderData);
+            
+            // 3. Incrementar uso del código promo si se usó
+            if (appliedPromo) {
+                await updateDoc(doc(db, 'promo_codes', appliedPromo.id), {
+                    timesUsed: increment(1)
+                });
+            }
+            
             setOrderId(docRef.id);
         } catch (err) {
             alert('Error al procesar el pedido: ' + err.message);
@@ -79,7 +166,13 @@ const Checkout = ({ items, total, onBack, onClose }) => {
     };
 
     if (orderId) {
-        const urlParams = encodeURIComponent(`¡Hola! Acabo de hacer el pedido #${orderId.slice(-6).toUpperCase()}.\n\nLlevo: ${items.map(i => `${i.quantity}x ${i.name}`).join(', ')}.\nSubtotal: $${formatPrice(total)}\nEnvío (${shipping.nombre}): $${formatPrice(shipping.precio)}\nTotal Final: $${formatPrice(finalTotal)}\nMétodo de pago: ${paymentMethod}\n${shipping.id === 'domicilio' ? `\nSoy ${name}. Mi dirección es: ${address}.` : `\nSoy ${name}. Paso a retirar.`} Te paso el comprobante de pago...`);
+        let wpText = `¡Hola! Acabo de hacer el pedido #${orderId.slice(-6).toUpperCase()}.\n\nLlevo: ${items.map(i => `${i.quantity}x ${i.name}`).join(', ')}.\nSubtotal: $${formatPrice(total)}`;
+        if (appliedPromo) {
+            wpText += `\nDescuento (${appliedPromo.code}): -$${formatPrice(discountAmount)}`;
+        }
+        wpText += `\nEnvío (${shipping.nombre}): $${formatPrice(shipping.precio)}\nTotal Final: $${formatPrice(finalTotal)}\nMétodo de pago: ${paymentMethod}\n${shipping.id === 'domicilio' ? `\nSoy ${name}. Mi dirección es: ${address}.` : `\nSoy ${name}. Paso a retirar.`} Te paso el comprobante de pago...`;
+        
+        const urlParams = encodeURIComponent(wpText);
         const wpUrl = `https://wa.me/${CONFIG_TELEFONO}?text=${urlParams}`;
 
         return (
@@ -110,10 +203,60 @@ const Checkout = ({ items, total, onBack, onClose }) => {
                 <div className="ml-container" style={{ maxWidth: '500px' }}>
                     <div className="ml-card">
                         <h3 style={{ marginTop: 0 }}>Resumen del pedido</h3>
+                        
+                        {/* Promo Code Input */}
+                        <div style={{ marginBottom: '15px', padding: '10px', background: '#f9f9f9', borderRadius: '8px', border: '1px solid #eee' }}>
+                            {!appliedPromo ? (
+                                <>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>¿Tenés un código de descuento?</label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input 
+                                            type="text" 
+                                            className="ml-input" 
+                                            placeholder="Ingresar código" 
+                                            value={promoCodeInput}
+                                            onChange={e => setPromoCodeInput(e.target.value)}
+                                            style={{ margin: 0, textTransform: 'uppercase' }}
+                                        />
+                                        <button 
+                                            type="button" 
+                                            className="ml-button" 
+                                            onClick={handleApplyPromo}
+                                            disabled={validatingPromo || !promoCodeInput.trim()}
+                                            style={{ padding: '8px 16px', background: '#333' }}
+                                        >
+                                            {validatingPromo ? '...' : 'Aplicar'}
+                                        </button>
+                                    </div>
+                                    {promoError && <p style={{ color: '#dc3545', fontSize: '12px', marginTop: '5px', marginBottom: 0 }}>{promoError}</p>}
+                                </>
+                            ) : (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div>
+                                        <span style={{ fontSize: '12px', color: '#666', display: 'block' }}>Código aplicado:</span>
+                                        <strong style={{ color: '#28a745' }}>{appliedPromo.code}</strong>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onClick={handleRemovePromo}
+                                        style={{ background: 'none', border: 'none', color: '#dc3545', cursor: 'pointer', fontSize: '14px', textDecoration: 'underline' }}
+                                    >
+                                        Quitar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', marginBottom: '8px' }}>
                             <span>Subtotal ({items.length} prod):</span>
                             <span>${formatPrice(total)}</span>
                         </div>
+                        {appliedPromo && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#28a745', marginBottom: '8px' }}>
+                                <span>Descuento ({appliedPromo.code}):</span>
+                                <span>-${formatPrice(discountAmount)}</span>
+                            </div>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', color: '#666', marginBottom: '10px' }}>
                             <span>Envío:</span>
                             <span>${formatPrice(shipping.precio)}</span>

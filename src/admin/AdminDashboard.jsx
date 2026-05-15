@@ -4,17 +4,20 @@ import { collection, query, onSnapshot, doc, updateDoc, deleteDoc, addDoc, getDo
 import { signOut } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import ProductForm from './ProductForm';
-import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag, Menu } from 'lucide-react';
+import PromoCodeForm from './PromoCodeForm';
+import { Package, ClipboardList, LogOut, Plus, Trash2, Edit2, Tag, Menu, Gift } from 'lucide-react';
 import { formatPrice } from '../utils/formatPrice';
 
 const DEFAULT_CATEGORIES = ['Tecnología', 'Moda', 'Supermercado'];
 
 const AdminDashboard = () => {
-    const [view, setView] = useState('products'); // 'products', 'orders', 'categories'
+    const [view, setView] = useState('products'); // 'products', 'orders', 'categories', 'promo_codes'
     const [products, setProducts] = useState([]);
     const [orders, setOrders] = useState([]);
     const [categories, setCategories] = useState([]);
+    const [promoCodes, setPromoCodes] = useState([]);
     const [showForm, setShowForm] = useState(false);
+    const [showPromoForm, setShowPromoForm] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
@@ -54,11 +57,18 @@ const AdminDashboard = () => {
             setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
         });
 
+        // Listen to promo codes
+        const qPromo = query(collection(db, 'promo_codes'));
+        const unsubscribePromo = onSnapshot(qPromo, (snapshot) => {
+            setPromoCodes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        });
+
         return () => {
             unsubscribeAuth();
             unsubscribeProducts();
             unsubscribeOrders();
             unsubscribeCategories();
+            unsubscribePromo();
         };
     }, [navigate]);
 
@@ -93,6 +103,12 @@ const AdminDashboard = () => {
     const handleDeleteOrder = async (id) => {
         if (window.confirm('¿Seguro que quieres eliminar este pedido del historial?')) {
             await deleteDoc(doc(db, 'orders', id));
+        }
+    };
+
+    const handleDeletePromoCode = async (id) => {
+        if (window.confirm('¿Seguro que querés eliminar este código promocional?')) {
+            await deleteDoc(doc(db, 'promo_codes', id));
         }
     };
 
@@ -180,6 +196,12 @@ const AdminDashboard = () => {
                     <Tag size={20} style={{ marginRight: '10px' }} /> Categorías
                 </div>
                 <div
+                    onClick={() => setView('promo_codes')}
+                    style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', background: view === 'promo_codes' ? '#444' : 'transparent', borderRadius: '4px', marginBottom: '8px' }}
+                >
+                    <Gift size={20} style={{ marginRight: '10px' }} /> Códigos Promo
+                </div>
+                <div
                     onClick={handleLogout}
                     style={{ display: 'flex', alignItems: 'center', padding: '12px', cursor: 'pointer', marginTop: '40px', color: '#ff6b6b' }}
                 >
@@ -194,7 +216,8 @@ const AdminDashboard = () => {
                     <h1>
                         {view === 'products' ? 'Inventario de Productos' 
                         : view === 'orders' ? 'Pedidos de Clientes' 
-                        : 'Gestión de Categorías'}
+                        : view === 'categories' ? 'Gestión de Categorías'
+                        : 'Códigos Promocionales'}
                     </h1>
                     {view === 'products' && (
                         <button className="ml-button" onClick={() => { setEditingProduct(null); setShowForm(true); }}>
@@ -204,6 +227,11 @@ const AdminDashboard = () => {
                     {view === 'categories' && (
                         <button className="ml-button" onClick={handleCreateCategory} style={{ background: '#28a745' }}>
                             <Plus size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Nueva Categoría
+                        </button>
+                    )}
+                    {view === 'promo_codes' && (
+                        <button className="ml-button" onClick={() => setShowPromoForm(true)} style={{ background: '#6f42c1' }}>
+                            <Plus size={20} style={{ verticalAlign: 'middle', marginRight: '5px' }} /> Nuevo Código
                         </button>
                     )}
                 </div>
@@ -299,6 +327,12 @@ const AdminDashboard = () => {
                                     <p><strong>Método de pago:</strong> {o.paymentMethod || 'No especificado'}</p>
                                     {o.shippingOption && <p><strong>Envío:</strong> {o.shippingOption}</p>}
                                     {o.customerAddress && <p><strong>Dirección:</strong> {o.customerAddress}</p>}
+                                    {o.promoCode && (
+                                        <div style={{ marginTop: '10px', padding: '10px', background: '#f3e8ff', border: '1px dashed #9333ea', borderRadius: '4px', color: '#6b21a8' }}>
+                                            <strong>Código Usado:</strong> {o.promoCode} <br/>
+                                            <strong>Descuento Aplicado:</strong> ${formatPrice(o.discountApplied)}
+                                        </div>
+                                    )}
                                 </div>
                                 <div style={{ borderTop: '1px solid #eee', paddingTop: '10px' }}>
                                     {o.items.map((item, idx) => (
@@ -347,6 +381,49 @@ const AdminDashboard = () => {
                         onClose={() => setShowForm(false)}
                         editingProduct={editingProduct}
                     />
+                )}
+
+                {showPromoForm && (
+                    <PromoCodeForm
+                        onClose={() => setShowPromoForm(false)}
+                    />
+                )}
+
+                {view === 'promo_codes' && (
+                    <div className="ml-card table-responsive">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '2px solid #eee', textAlign: 'left' }}>
+                                    <th style={{ padding: '12px' }}>Código</th>
+                                    <th style={{ padding: '12px' }}>Descuento</th>
+                                    <th style={{ padding: '12px' }}>Condición</th>
+                                    <th style={{ padding: '12px' }}>Usos</th>
+                                    <th style={{ padding: '12px' }}>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {promoCodes.length === 0 ? (
+                                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#999' }}>No hay códigos promocionales.</td></tr>
+                                ) : promoCodes.map(pc => (
+                                    <tr key={pc.id} style={{ borderBottom: '1px solid #eee' }}>
+                                        <td style={{ padding: '12px', fontWeight: 'bold' }}>{pc.code}</td>
+                                        <td style={{ padding: '12px' }}>
+                                            {pc.discountType === 'percentage' ? `${pc.discountValue}%` : `$${formatPrice(pc.discountValue)}`}
+                                        </td>
+                                        <td style={{ padding: '12px' }}>
+                                            {pc.conditionType === 'all' ? 'Todo' : pc.conditionType === 'min_amount' ? `Mín. $${formatPrice(pc.conditionValue)}` : `Categoría: ${pc.conditionValue}`}
+                                        </td>
+                                        <td style={{ padding: '12px' }}>
+                                            {pc.timesUsed} {pc.usageLimit > 0 ? `/ ${pc.usageLimit}` : ' (Sin límite)'}
+                                        </td>
+                                        <td style={{ padding: '12px' }}>
+                                            <Trash2 size={18} style={{ cursor: 'pointer', color: '#ff6b6b' }} onClick={() => handleDeletePromoCode(pc.id)} />
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </div>
